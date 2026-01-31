@@ -25,6 +25,7 @@ interface ProgressContextType {
     updateModuleProgress: (moduleId: string, updates: Partial<ModuleProgress>) => void;
     getModuleProgress: (moduleId: string) => ModuleProgress | null;
     canAccessModule: (moduleId: string) => boolean;
+    isLoaded: boolean;
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
@@ -37,20 +38,23 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         badges: [],
         certificateEarned: false
     });
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    // Load from LocalStorage on Mount/User Change
+    // 1. Load from LocalStorage on mount
     useEffect(() => {
-        if (user) {
+        if (user && !isLoaded) {
             const savedProgress = localStorage.getItem(`dme_progress_${user.id}`);
             if (savedProgress) {
                 try {
-                    setProgress(JSON.parse(savedProgress));
+                    const parsed = JSON.parse(savedProgress);
+                    setProgress(parsed);
+                    console.log("Progress Sync: LocalStorage loaded");
                 } catch (e) {
                     console.error("Failed to parse progress", e);
                 }
             }
         }
-    }, [user]);
+    }, [user, isLoaded]);
 
     // DB Sync (Skipped in Mock Mode)
     useEffect(() => {
@@ -68,6 +72,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
             if (isMockMode) {
                 console.log("Progress Sync: In mock mode, using LocalStorage only.");
+                setIsLoaded(true);
                 return;
             }
 
@@ -77,7 +82,13 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 .eq('user_id', user.id);
 
             if (error) {
-                console.error("Progress Sync: Error loading from Supabase:", error);
+                console.error("Progress Sync: Error loading from Supabase:", {
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint,
+                    code: error.code
+                });
+                setIsLoaded(true);
                 return;
             }
 
@@ -88,6 +99,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     const modulesFromDb: Record<string, ModuleProgress> = { ...prev.modules };
 
                     data.forEach((row: any) => {
+                        // Priority: If DB says it's completed, it's completed.
                         const isDone = row.quiz_completed && row.video_watched && row.game_completed;
                         modulesFromDb[row.module_id] = {
                             moduleId: row.module_id,
@@ -95,14 +107,15 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                             gameCompleted: row.game_completed || false,
                             quizCompleted: row.quiz_completed || false,
                             score: row.quiz_score || 0,
-                            completedAt: isDone ? row.updated_at : undefined
+                            completedAt: isDone ? row.updated_at : (prev.modules[row.module_id]?.completedAt || undefined)
                         };
                     });
 
-                    // Recalculate points/stats
+                    // Recalculate points/stats/badges
                     let totalPoints = 0;
                     let completedModules = 0;
                     const earnedBadges: string[] = [];
+
                     Object.values(modulesFromDb).forEach(m => {
                         if (m.quizCompleted) {
                             completedModules++;
@@ -115,13 +128,6 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         earnedBadges.push('badge-master-disaster-manager');
                     }
 
-                    console.log("Progress Sync: State updated from DB", {
-                        modulesCount: Object.keys(modulesFromDb).length,
-                        totalPoints,
-                        completedModules,
-                        badgesCount: earnedBadges.length
-                    });
-
                     return {
                         ...prev,
                         modules: modulesFromDb,
@@ -130,20 +136,23 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                         certificateEarned: completedModules >= 10,
                     };
                 });
+                console.log("Progress Sync: State successfully merged with DB data");
             } else {
-                console.log("Progress Sync: No records found in Supabase for this user.");
+                console.log("Progress Sync: No DB data found, proceeding with local/empty state.");
             }
+            setIsLoaded(true);
         };
 
         loadFromDb();
     }, [user]);
 
-    // Save to LocalStorage on Change
+    // 3. Save to LocalStorage ONLY after initial load is complete
     useEffect(() => {
-        if (user) {
+        if (user && isLoaded) {
+            console.log("Progress Sync: Saving to LocalStorage...");
             localStorage.setItem(`dme_progress_${user.id}`, JSON.stringify(progress));
         }
-    }, [progress, user]);
+    }, [progress, user, isLoaded]);
 
     const updateModuleProgress = (moduleId: string, updates: Partial<ModuleProgress>) => {
         // internal check for mock mode
@@ -194,7 +203,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
             // Async DB Sync (performed as a side effect outside of functional update)
             setTimeout(() => {
-                if (!isMockMode && user) {
+                if (!isMockMode && user && isLoaded) { // Only save to DB if we've finished loading!
                     console.log("Progress Sync: Saving to Supabase...", { moduleId, updates });
                     supabase
                         .from('module_progress')
@@ -243,7 +252,8 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             progress,
             updateModuleProgress,
             getModuleProgress,
-            canAccessModule
+            canAccessModule,
+            isLoaded
         }}>
             {children}
         </ProgressContext.Provider>

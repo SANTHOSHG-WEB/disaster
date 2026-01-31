@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -103,7 +104,16 @@ export default function AdminLoginPage() {
                         </div>
                     </form>
 
-                    <div className="mt-6 text-center text-xs text-muted-foreground">
+                    <div className="mt-6 text-center">
+                        <p className="text-sm text-muted-foreground">
+                            Don&apos;t have an admin account?{' '}
+                            <Link href="/admin/signup" className="text-primary font-semibold hover:underline">
+                                Register your institute
+                            </Link>
+                        </p>
+                    </div>
+
+                    <div className="mt-6 text-center text-xs text-muted-foreground border-t border-glass-border pt-4">
                         <p>Unauthorized access attempts are monitored.</p>
                         <p className="mt-1">System ID: DME-ADMIN-V1.0</p>
                     </div>

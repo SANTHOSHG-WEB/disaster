@@ -16,8 +16,17 @@ import { useTranslation } from 'react-i18next';
 export default function Learning() {
     const router = useRouter();
     const { user, profile } = useAuth();
-    const { progress, canAccessModule, getModuleProgress } = useProgress();
+    const { progress, canAccessModule, getModuleProgress, isLoaded } = useProgress();
     const { t } = useTranslation();
+
+    if (!isLoaded && user) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+                <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-muted-foreground animate-pulse">Syncing your progress...</p>
+            </div>
+        );
+    }
 
     const handleModuleClick = (moduleId: string) => {
         if (canAccessModule(moduleId)) {
@@ -72,7 +81,7 @@ export default function Learning() {
                             <Link href="/certificate" className="block">
                                 <div className="text-center p-3 neumorphic rounded-xl hover:scale-105 transition-transform cursor-pointer border-2 border-transparent hover:border-primary/20">
                                     <div className="text-2xl font-bold text-success">{progress.certificateEarned ? '1' : '0'}</div>
-                                    <div className="text-xs text-muted-foreground">Cert</div>
+                                    <div className="text-xs text-muted-foreground">Certificate</div>
                                 </div>
                             </Link>
                         </div>

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useProgress } from '@/hooks/useProgress';
-import { useEnrollment } from '@/hooks/useEnrollment';
 import { modules } from '@/data/modules';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,9 +20,8 @@ export default function ModulePage() {
     const moduleId = params.id as string;
     const router = useRouter();
     const { user } = useAuth();
-    const { canAccessModule, getModuleProgress, updateModuleProgress } = useProgress();
+    const { canAccessModule, getModuleProgress, updateModuleProgress, isLoaded } = useProgress();
     const { toast } = useToast();
-    const { isEnrolledIn, enrollInModule, completeModule } = useEnrollment();
 
     const [currentStage, setCurrentStage] = useState<'video' | 'game' | 'quiz'>('video');
     const [videoProgress, setVideoProgress] = useState(0);
@@ -45,10 +43,11 @@ export default function ModulePage() {
     }, [user, canAccess, module, router, toast]);
 
     useEffect(() => {
-        if (user && moduleId && !isEnrolledIn(moduleId)) {
-            enrollInModule(moduleId);
+        if (isLoaded && user && moduleId && !getModuleProgress(moduleId)) {
+            // "Enrollment" is just making sure the module exists in our progress state
+            updateModuleProgress(moduleId, {});
         }
-    }, [user, moduleId, isEnrolledIn, enrollInModule]);
+    }, [user, moduleId, getModuleProgress, updateModuleProgress, isLoaded]);
 
     if (!module) {
         return (
@@ -96,7 +95,6 @@ export default function ModulePage() {
 
     const handleQuizComplete = async (score: number) => {
         updateModuleProgress(moduleId, { quizCompleted: true, score });
-        await completeModule(moduleId);
         toast({ title: "Module Mastered!", description: `Scored ${score} points! You've earned a new badge!` });
     };
 

@@ -17,9 +17,19 @@ import { useTranslation } from 'react-i18next';
 
 export default function LoginPage() {
     const router = useRouter();
-    const { login, signup, isLoading } = useAuth();
+    const { login, signup, isLoading, user } = useAuth();
     const { toast } = useToast();
     const { t } = useTranslation();
+
+    React.useEffect(() => {
+        if (user) {
+            if (user.email === 'admin@dme.com') {
+                router.push('/admin/dashboard');
+            } else {
+                router.push('/learning');
+            }
+        }
+    }, [user, router]);
 
     const [loginForm, setLoginForm] = useState({ email: '', password: '' });
     const [signupForm, setSignupForm] = useState({

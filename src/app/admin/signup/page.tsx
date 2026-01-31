@@ -1,6 +1,10 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
     Building2,
@@ -13,7 +17,6 @@ import {
     ShieldCheck,
     MapPin
 } from "lucide-react";
-import Link from "next/link";
 
 export default function AdminSignup() {
     const [formData, setFormData] = useState({
@@ -41,14 +44,39 @@ export default function AdminSignup() {
         }
     };
 
+    const router = useRouter();
+    const { signup, isLoading } = useAuth();
+    const { toast } = useToast();
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Admin Signup", formData, preview);
-        // Logic for Supabase admin registration
+
+        // Safety check for user's desired admin email
+        if (formData.email !== 'admin@dme.com') {
+            toast({
+                title: "Invalid Email",
+                description: "Only admin@dme.com can register as a system administrator.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        const { error } = await signup(formData.email, formData.password, {
+            full_name: formData.adminName,
+            school_name: formData.instituteName,
+            role: 'admin'
+        });
+
+        if (!error) {
+            toast({ title: "Admin Registered", description: "Verification email sent. Please check your inbox." });
+            router.push('/admin/login');
+        } else {
+            toast({ title: "Signup Failed", description: error, variant: "destructive" });
+        }
     };
 
     return (
@@ -174,6 +202,7 @@ export default function AdminSignup() {
 
                         <button
                             type="submit"
+                            disabled={isLoading}
                             className="primary-button"
                             style={{
                                 marginTop: "1rem",
@@ -185,12 +214,25 @@ export default function AdminSignup() {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                gap: "0.75rem"
+                                gap: "0.75rem",
+                                width: "100%",
+                                border: "none",
+                                cursor: isLoading ? "not-allowed" : "pointer",
+                                opacity: isLoading ? 0.7 : 1
                             }}
                         >
-                            Request Admin Access <ArrowRight size={20} />
+                            {isLoading ? "Processing..." : "Register Administrator"} <ArrowRight size={20} />
                         </button>
                     </form>
+
+                    <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
+                        <p style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>
+                            Already have an account?{" "}
+                            <Link href="/admin/login" style={{ color: "var(--primary)", fontWeight: 700 }}>
+                                Login here
+                            </Link>
+                        </p>
+                    </div>
 
                     <div style={{ marginTop: "2rem", padding: "1rem", borderRadius: "0.75rem", backgroundColor: "var(--accent)", display: "flex", gap: "1rem" }}>
                         <ShieldCheck size={20} className="text-primary" />

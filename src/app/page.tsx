@@ -2,87 +2,23 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { useEnrollment } from '@/hooks/useEnrollment';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, BookOpen, Shield, Users, Award, ArrowRight } from 'lucide-react';
-import { format } from 'date-fns';
+import { BookOpen, Shield, Users, Award, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
   const router = useRouter();
-  const { user, updateProfile, profile } = useAuth();
-  const { enrollInModule } = useEnrollment();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
 
-  const [showEnrollDialog, setShowEnrollDialog] = useState(false);
-  const [enrollForm, setEnrollForm] = useState({
-    full_name: '',
-    age: '',
-    birthday: undefined as Date | undefined,
-    school_name: '',
-    class_name: ''
-  });
 
   const handleEnrollClick = () => {
-    if (user) {
-      if (profile?.school_name) {
-        enrollInFirstModule();
-      } else {
-        setShowEnrollDialog(true);
-      }
-    } else {
-      router.push('/login');
-    }
+    router.push('/login');
   };
 
-  const enrollInFirstModule = async () => {
-    const success = await enrollInModule('1');
-    if (success) {
-      router.push('/learning');
-    }
-  };
-
-  const handleEnrollSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!enrollForm.full_name.trim() || !enrollForm.school_name.trim()) {
-      toast({
-        title: "Required Fields Missing",
-        description: "Please fill in your name and school.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const profileData = {
-      full_name: enrollForm.full_name,
-      age: enrollForm.age ? parseInt(enrollForm.age) : undefined,
-      birthday: enrollForm.birthday ? format(enrollForm.birthday, 'yyyy-MM-dd') : undefined,
-      school_name: enrollForm.school_name,
-      class_name: enrollForm.class_name || undefined,
-    };
-
-    const { error } = await updateProfile(profileData);
-
-    if (!error) {
-      setShowEnrollDialog(false);
-      await enrollInFirstModule();
-    } else {
-      toast({
-        title: "Profile Update Failed",
-        description: error,
-        variant: "destructive",
-      });
-    }
-  };
 
   const features = [
     {
@@ -253,93 +189,6 @@ export default function Home() {
         </div>
       </section>
 
-      <Dialog open={showEnrollDialog} onOpenChange={setShowEnrollDialog}>
-        <DialogContent className="glass border-glass-border max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-glass-foreground">Complete Your Profile</DialogTitle>
-          </DialogHeader>
-
-          <form onSubmit={handleEnrollSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="enroll-name">Full Name *</Label>
-              <Input
-                id="enroll-name"
-                value={enrollForm.full_name}
-                onChange={(e) => setEnrollForm(prev => ({ ...prev, full_name: e.target.value }))}
-                required
-                className="glass border-glass-border"
-                placeholder="Enter your full name"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="enroll-age">Age</Label>
-                <Input
-                  id="enroll-age"
-                  type="number"
-                  value={enrollForm.age}
-                  onChange={(e) => setEnrollForm(prev => ({ ...prev, age: e.target.value }))}
-                  className="glass border-glass-border"
-                  placeholder="Age"
-                />
-              </div>
-
-              <div>
-                <Label>Birthday</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full glass border-glass-border justify-start text-left font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {enrollForm.birthday ? format(enrollForm.birthday, 'MMM dd') : 'Pick date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 glass" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={enrollForm.birthday}
-                      onSelect={(date) => setEnrollForm(prev => ({ ...prev, birthday: date }))}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="enroll-school">School/College Name *</Label>
-              <Input
-                id="enroll-school"
-                value={enrollForm.school_name}
-                onChange={(e) => setEnrollForm(prev => ({ ...prev, school_name: e.target.value }))}
-                required
-                placeholder="Enter your institution name"
-                className="glass border-glass-border"
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowEnrollDialog(false)}
-                className="flex-1 glass border-glass-border"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-primary text-white"
-              >
-                Enroll Now
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
