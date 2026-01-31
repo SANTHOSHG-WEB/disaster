@@ -1,0 +1,46 @@
+{
+    "common": {
+        "welcome": "Welcome",
+        "signIn": "Sign In",
+        "signUp": "Sign Up",
+        "logout": "Logout",
+        "home": "Home",
+        "about": "About",
+        "learning": "Learning",
+        "safetyMap": "Safety Map",
+        "weather": "Weather",
+        "getStarted": "Get Started for Free",
+        "learnMore": "Learn More"
+    },
+    "hero": {
+        "badge": "Building a Safer India, Together",
+        "title": "Empowering Students through Disaster Education",
+        "subtitle": "An AI-powered platform designed to teach essential disaster management skills to the next generation in a fun, interactive way."
+    },
+    "features": {
+        "interactiveLearning": {
+            "title": "Interactive Learning",
+            "description": "Learn disaster preparedness through engaging video modules and game-based checkpoints."
+        },
+        "safetyMap": {
+            "title": "Real-time Safety Map",
+            "description": "Find nearby shelters, safe zones, and relief centers with our live interactive map."
+        },
+        "weather": {
+            "title": "Weather Intelligence",
+            "description": "Get hyper-local weather alerts and disaster risk analysis powered by AI."
+        },
+        "aiAssistant": {
+            "title": "AI Assistant",
+            "description": "Our multilingual AI chat is available 24/7 to answer your safety questions."
+        },
+        "certification": {
+            "title": "Certification",
+            "description": "Earn recognized certificates as you master different disaster management levels."
+        },
+        "verifiedInfo": {
+            "title": "Verified Info",
+            "description": "Access official government data and verified emergency contacts in one place."
+        }
+    }
+}
