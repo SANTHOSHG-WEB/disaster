@@ -160,7 +160,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         };
 
         loadFromDb();
-    }, [user]);
+    }, [user?.id]);
 
     // 3. Save to LocalStorage ONLY after initial load is complete
     useEffect(() => {
@@ -219,7 +219,8 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
             // Async DB Sync (performed as a side effect outside of functional update)
             setTimeout(() => {
-                if (!isMockMode && user && isLoaded) { // Only save to DB if we've finished loading!
+                const canSave = !isMockMode && user?.id && isLoaded;
+                if (canSave) {
                     console.log("Progress Sync: Saving to Supabase...", { moduleId, updates });
                     supabase
                         .from('module_progress')
@@ -232,11 +233,21 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                             quiz_score: updatedModule.score,
                             status: isDone ? 'completed' : 'in-progress',
                             updated_at: new Date().toISOString()
+                        }, {
+                            onConflict: 'user_id,module_id'
                         })
                         .then(({ error }: { error: any }) => {
-                            if (error) console.error("Progress Sync: Error saving to DB:", error);
-                            else console.log("Progress Sync: Successfully saved to DB.");
+                            if (error) {
+                                console.error("Progress Sync: Error saving to DB:", error);
+                            } else {
+                                console.log("Progress Sync: Successfully saved to DB.");
+                            }
+                        })
+                        .catch((err: any) => {
+                            console.error("Progress Sync: Critical saving error:", err);
                         });
+                } else {
+                    console.log("Progress Sync: Save skipped", { isMockMode, hasUser: !!user, isLoaded });
                 }
             }, 0);
 
