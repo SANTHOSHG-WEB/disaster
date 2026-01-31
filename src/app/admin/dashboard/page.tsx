@@ -42,9 +42,9 @@ export default function AdminDashboard() {
                     .select('user_id, status');
 
                 if (profiles) {
-                    const studentList = profiles.map(p => {
-                        const userProgress = progress?.filter(pr => pr.user_id === p.id) || [];
-                        const completedCount = userProgress.filter(pr => pr.status === 'completed').length;
+                    const studentList = profiles.map((p: any) => {
+                        const userProgress = progress?.filter((pr: any) => pr.user_id === p.id) || [];
+                        const completedCount = userProgress.filter((pr: any) => pr.status === 'completed').length;
                         const progressPercent = Math.round((completedCount / 10) * 100);
 
                         return {
