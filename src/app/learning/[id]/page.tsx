@@ -36,11 +36,13 @@ export default function ModulePage() {
             router.push('/login');
             return;
         }
-        if (module && !canAccess) {
+
+        // Wait for progress to load before checking access
+        if (isLoaded && module && !canAccess) {
             toast({ title: "Module Locked", variant: "destructive" });
             router.push('/learning');
         }
-    }, [user, canAccess, module, router, toast]);
+    }, [user, canAccess, module, router, toast, isLoaded]);
 
     useEffect(() => {
         if (isLoaded && user && moduleId && !getModuleProgress(moduleId)) {
@@ -59,10 +61,11 @@ export default function ModulePage() {
         );
     }
 
-    if (!user) {
+    if (!isLoaded || !user) {
         return (
-            <div className="flex justify-center items-center min-h-[50vh]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="flex flex-col justify-center items-center min-h-[50vh] gap-4">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                <p className="text-muted-foreground animate-pulse">Syncing your progress...</p>
             </div>
         );
     }

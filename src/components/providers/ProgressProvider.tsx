@@ -40,6 +40,20 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
     const [isLoaded, setIsLoaded] = useState(false);
 
+    // 0. Clean start on user change (Important for cross-device & logout/login)
+    useEffect(() => {
+        if (user?.id) {
+            console.log("Progress Sync: New user detected, resetting local state for loading.");
+            setIsLoaded(false);
+            setProgress({
+                modules: {},
+                points: 0,
+                badges: [],
+                certificateEarned: false
+            });
+        }
+    }, [user?.id]);
+
     // 1. Load from LocalStorage on mount
     useEffect(() => {
         if (user && !isLoaded) {
@@ -48,19 +62,20 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 try {
                     const parsed = JSON.parse(savedProgress);
                     setProgress(parsed);
-                    console.log("Progress Sync: LocalStorage loaded");
+                    console.log("Progress Sync: LocalStorage loaded for", user.id);
                 } catch (e) {
                     console.error("Failed to parse progress", e);
                 }
             }
         }
-    }, [user, isLoaded]);
+    }, [user?.id, isLoaded]);
 
     // DB Sync (Skipped in Mock Mode)
     useEffect(() => {
         const loadFromDb = async () => {
             if (!user) {
                 console.log("Progress Sync: No user, skipping DB load.");
+                setIsLoaded(true); // Don't block UI if logged out
                 return;
             }
 
