@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // Await these to ensure the role/profile is available before isLoading becomes false
                 await Promise.all([
                     fetchUserProfile(session.user.id),
-                    fetchUserRole(session.user.id)
+                    fetchUserRole(session.user.id, session.user.email)
                 ]);
             }
             setIsLoading(false);
@@ -101,7 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     // before isLoading flips to false (if it was true)
                     await Promise.all([
                         fetchUserProfile(session.user.id),
-                        fetchUserRole(session.user.id)
+                        fetchUserRole(session.user.id, session.user.email)
                     ]);
                 } else {
                     setProfile(null);
@@ -127,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const fetchUserRole = async (userId: string) => {
+    const fetchUserRole = async (userId: string, userEmail?: string) => {
         const { data, error } = await supabase
             .from('user_roles')
             .select('role')
@@ -136,6 +136,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (data && !error) {
             setUserRole({ role: data.role as 'admin' | 'moderator' | 'student' });
+        } else {
+            // Fallback for system administrator email if role is missing in DB
+            if (userEmail === 'admin@dme.com') {
+                setUserRole({ role: 'admin' });
+            } else {
+                setUserRole({ role: 'student' });
+            }
         }
     };
 
@@ -197,13 +204,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return {};
             }
 
-            const { error } = await supabase.auth.signInWithPassword({
+            const { data: { user: signedInUser }, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
 
             if (error) {
                 return { error: error.message };
+            }
+
+            if (signedInUser) {
+                // Fetch and update state BEFORE returning, so the next page has the data
+                await Promise.all([
+                    fetchUserProfile(signedInUser.id),
+                    fetchUserRole(signedInUser.id, signedInUser.email)
+                ]);
             }
 
             return {};
@@ -276,7 +291,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return {};
             }
 
-            const { error } = await supabase.auth.signUp({
+            const { data: { user: signedUpUser }, error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
@@ -286,6 +301,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (error) {
                 return { error: error.message };
+            }
+
+            if (signedUpUser) {
+                // Ensure profile/role are fetched (or created via trigger) before moving on
+                await Promise.all([
+                    fetchUserProfile(signedUpUser.id),
+                    fetchUserRole(signedUpUser.id, signedUpUser.email)
+                ]);
             }
 
             return {};
