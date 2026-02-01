@@ -26,6 +26,8 @@ interface ProgressContextType {
     getModuleProgress: (moduleId: string) => ModuleProgress | null;
     canAccessModule: (moduleId: string) => boolean;
     isLoaded: boolean;
+    syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
+    forceRefresh: () => Promise<void>;
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
@@ -39,6 +41,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         certificateEarned: false
     });
     const [isLoaded, setIsLoaded] = useState(false);
+    const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
 
     // 0. Clean start on user change (Important for cross-device & logout/login)
     useEffect(() => {
@@ -133,8 +136,10 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 }
 
                 console.log("Progress Sync: Reconciliation complete.");
+                setSyncStatus('synced');
             } catch (error) {
                 console.error("Progress Sync: Error during reconciliation:", error);
+                setSyncStatus('error');
                 // On failure, we at least have LocalStorage (from step 1)
                 setProgress(currentLocal);
             } finally {
@@ -144,6 +149,47 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         reconcileProgress();
     }, [user?.id]);
+
+    const forceRefresh = async () => {
+        setIsLoaded(false);
+        setSyncStatus('syncing');
+
+        if (!user?.id) {
+            setIsLoaded(true);
+            setSyncStatus('idle');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/progress');
+            if (!response.ok) throw new Error("Fetch failed");
+            const dbData = await response.json();
+
+            const mergedModules = { ...progress.modules };
+            if (dbData && dbData.length > 0) {
+                dbData.forEach((row: any) => {
+                    const dbMod: ModuleProgress = {
+                        moduleId: row.module_id,
+                        videoWatched: row.video_watched || false,
+                        gameCompleted: row.game_completed || false,
+                        quizCompleted: row.quiz_completed || false,
+                        score: row.quiz_score || 0,
+                    };
+                    mergedModules[row.module_id] = dbMod;
+                });
+            }
+
+            const finalProgress = recalculateStats(mergedModules);
+            setProgress(finalProgress);
+            setSyncStatus('synced');
+            console.log("Progress Sync: Force refresh complete.");
+        } catch (error) {
+            console.error("Progress Sync: Force refresh failed", error);
+            setSyncStatus('error');
+        } finally {
+            setIsLoaded(true);
+        }
+    };
 
     const recalculateStats = (modules: Record<string, ModuleProgress>): UserProgress => {
         let totalPoints = 0;
@@ -249,9 +295,11 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             setTimeout(async () => {
                 const canSave = user?.id && isLoaded;
                 if (canSave) {
+                    setSyncStatus('syncing');
                     console.log("Progress Sync: Saving to API...", { moduleId, updates });
                     try {
                         const response = await fetch('/api/progress', {
+                            // ... (wait I need to provide more lines to match exactly)
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -272,8 +320,10 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
                         const result = await response.json();
                         console.log("Progress Sync: Successfully saved to API:", result);
+                        setSyncStatus('synced');
                     } catch (error) {
                         console.error("Progress Sync: Error saving through API:", error);
+                        setSyncStatus('error');
                     }
                 } else {
                     console.log("Progress Sync: Save skipped", { hasUser: !!user, isLoaded });
@@ -309,7 +359,9 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             updateModuleProgress,
             getModuleProgress,
             canAccessModule,
-            isLoaded
+            isLoaded,
+            syncStatus,
+            forceRefresh
         }}>
             {children}
         </ProgressContext.Provider>

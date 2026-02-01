@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     const cookieStore = await cookies()
     const supabase = createServerClient(
@@ -58,9 +60,10 @@ export async function POST(request: Request) {
         }
     )
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    const user = session?.user;
 
-    if (authError || !user) {
+    if (!user) {
         console.error("Progress API: POST Unauthorized", { authError });
         return NextResponse.json({ error: 'Unauthorized', details: authError?.message }, { status: 401 })
     }

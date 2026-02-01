@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Menu, X, LogOut } from 'lucide-react';
+import { Menu, X, LogOut, Cloud, CloudOff, RefreshCw, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
+import { useProgress } from '@/hooks/useProgress';
 
 const Header = () => {
     // const [isMenuOpen, setIsMenuOpen] = useState(false); // Removed state
@@ -13,6 +13,7 @@ const Header = () => {
     const router = useRouter();
     const { t } = useTranslation();
     const { user, logout } = useAuth();
+    const { syncStatus, forceRefresh } = useProgress();
 
     const handleLogout = async () => {
         await logout();
@@ -39,14 +40,38 @@ const Header = () => {
                     <h1 className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold text-glass-foreground leading-tight">
                         Disaster Management Education Platform
                     </h1>
-                    <button
-                        onClick={handleSOSClick}
-                        className="blink bg-emergency text-white 
-                        px-3 py-1.5 rounded-lg font-bold text-xs sm:text-sm
-                        transition-all duration-300 hover:scale-105"
-                    >
-                        🚨 SOS
-                    </button>
+
+                    <div className="flex items-center gap-2">
+                        {user && (
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-glass/20 border border-glass-border/30">
+                                {syncStatus === 'syncing' ? (
+                                    <RefreshCw className="h-3.5 w-3.5 text-primary animate-spin" />
+                                ) : syncStatus === 'error' ? (
+                                    <CloudOff className="h-3.5 w-3.5 text-destructive" />
+                                ) : (
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                                )}
+                                <span className="text-[10px] font-medium text-glass-foreground uppercase tracking-wider hidden sm:inline">
+                                    {syncStatus === 'syncing' ? 'Syncing' : syncStatus === 'error' ? 'Sync Error' : 'Cloud Synced'}
+                                </span>
+                                <button
+                                    onClick={() => forceRefresh()}
+                                    className="p-1 hover:bg-glass/30 rounded-full transition-colors"
+                                    title="Force Sync"
+                                >
+                                    <RefreshCw className={`h-3 w-3 ${syncStatus === 'syncing' ? 'opacity-50' : ''}`} />
+                                </button>
+                            </div>
+                        )}
+                        <button
+                            onClick={handleSOSClick}
+                            className="blink bg-emergency text-white 
+                            px-3 py-1.5 rounded-lg font-bold text-xs sm:text-sm
+                            transition-all duration-300 hover:scale-105"
+                        >
+                            🚨 SOS
+                        </button>
+                    </div>
                 </div>
             </div>
 
