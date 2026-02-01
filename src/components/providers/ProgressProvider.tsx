@@ -84,6 +84,9 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             try {
                 const response = await fetch('/api/progress');
                 if (!response.ok) {
+                    if (response.status === 401) {
+                        console.warn("Progress Sync: User not authenticated on server. Data might not sync.");
+                    }
                     throw new Error(`Failed to fetch progress: ${response.statusText}`);
                 }
                 const data = await response.json();

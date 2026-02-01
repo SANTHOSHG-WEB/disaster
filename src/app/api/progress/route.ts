@@ -19,8 +19,11 @@ export async function GET() {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        console.error("Progress API: GET Unauthorized", { authError });
+        return NextResponse.json({ error: 'Unauthorized', details: authError?.message }, { status: 401 })
     }
+
+    console.log("Progress API: GET fetching for user", user.id);
 
     const { data, error } = await supabase
         .from('module_progress')
@@ -28,6 +31,7 @@ export async function GET() {
         .eq('user_id', user.id)
 
     if (error) {
+        console.error("Progress API: GET database error", error);
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
@@ -44,6 +48,12 @@ export async function POST(request: Request) {
                 get(name: string) {
                     return cookieStore.get(name)?.value
                 },
+                set(name: string, value: string, options: any) {
+                    cookieStore.set({ name, value, ...options })
+                },
+                remove(name: string, options: any) {
+                    cookieStore.set({ name, value: '', ...options })
+                },
             },
         }
     )
@@ -51,11 +61,14 @@ export async function POST(request: Request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        console.error("Progress API: POST Unauthorized", { authError });
+        return NextResponse.json({ error: 'Unauthorized', details: authError?.message }, { status: 401 })
     }
 
     const body = await request.json()
     const { moduleId, videoWatched, gameCompleted, quizCompleted, score, status } = body
+
+    console.log("Progress API: POST upserting for user", user.id, { moduleId });
 
     const { data, error } = await supabase
         .from('module_progress')
@@ -74,6 +87,7 @@ export async function POST(request: Request) {
         .select()
 
     if (error) {
+        console.error("Progress API: POST database error", error);
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
