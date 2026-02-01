@@ -51,68 +51,90 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Check if using placeholder credentials
-        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const isMockMode = url?.includes('your-project');
+        let mounted = true;
 
-        console.log("Auth Initializing", { url, isMockMode });
+        const initAuth = async () => {
+            const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const isMockMode = url?.includes('your-project');
 
-        if (isMockMode) {
-            const storedSession = localStorage.getItem('dme_mock_session');
-            if (storedSession) {
-                try {
-                    const { user, session, profile, role } = JSON.parse(storedSession);
-                    setUser(user);
-                    setSession(session);
-                    setProfile(profile);
-                    setUserRole(role);
-                } catch (e) {
-                    console.error("Failed to restore mock session", e);
+            console.log("Auth Initializing...", { isMockMode });
+
+            if (isMockMode) {
+                const storedSession = localStorage.getItem('dme_mock_session');
+                if (storedSession && mounted) {
+                    try {
+                        const { user, session, profile, role } = JSON.parse(storedSession);
+                        setUser(user);
+                        setSession(session);
+                        setProfile(profile);
+                        setUserRole(role);
+                    } catch (e) {
+                        console.error("Failed to restore mock session", e);
+                    }
                 }
-            }
-            setIsLoading(false);
-            return;
-        }
-
-        // Check for existing session
-        supabase.auth.getSession().then(async ({ data: { session } }: any) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                // Await these to ensure the role/profile is available before isLoading becomes false
-                await Promise.all([
-                    fetchUserProfile(session.user.id),
-                    fetchUserRole(session.user.id, session.user.email)
-                ]);
-            }
-            setIsLoading(false);
-        }).catch(() => {
-            setIsLoading(false);
-        });
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event: any, session: any) => {
-                console.log("Auth State Change:", event, session?.user?.email);
-                setSession(session);
-                setUser(session?.user ?? null);
-
-                if (session?.user) {
-                    // Await these so that components depending on userRole see it correctly 
-                    // before isLoading flips to false (if it was true)
-                    await Promise.all([
-                        fetchUserProfile(session.user.id),
-                        fetchUserRole(session.user.id, session.user.email)
-                    ]);
-                } else {
-                    setProfile(null);
-                    setUserRole(null);
-                }
-
                 setIsLoading(false);
+                return;
             }
-        );
 
-        return () => subscription.unsubscribe();
+            try {
+                // 1. Get initial session
+                const { data: { session: initialSession } } = await supabase.auth.getSession();
+
+                if (mounted) {
+                    setSession(initialSession);
+                    setUser(initialSession?.user ?? null);
+
+                    if (initialSession?.user) {
+                        await Promise.all([
+                            fetchUserProfile(initialSession.user.id),
+                            fetchUserRole(initialSession.user.id, initialSession.user.email)
+                        ]);
+                    }
+                }
+            } catch (error) {
+                console.error("Error during initial session fetch", error);
+            } finally {
+                if (mounted) setIsLoading(false);
+            }
+
+            // 2. Setup listener for future changes
+            const { data: { subscription } } = supabase.auth.onAuthStateChange(
+                async (event: string, session: any) => {
+                    console.log("Auth Event:", event, session?.user?.email);
+
+                    if (!mounted) return;
+
+                    // Skip the INITIAL_SESSION event if we already handled getSession reliably
+                    // Actually, onAuthStateChange is better for handling the 'SIGNED_IN' event after OAuth
+                    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                        setSession(session);
+                        setUser(session?.user ?? null);
+                        if (session?.user) {
+                            await Promise.all([
+                                fetchUserProfile(session.user.id),
+                                fetchUserRole(session.user.id, session.user.email)
+                            ]);
+                        }
+                    } else if (event === 'SIGNED_OUT') {
+                        setSession(null);
+                        setUser(null);
+                        setProfile(null);
+                        setUserRole(null);
+                    }
+                }
+            );
+
+            return () => {
+                subscription.unsubscribe();
+            };
+        };
+
+        const cleanupPromise = initAuth();
+
+        return () => {
+            mounted = false;
+            // Unsubscribe is handled inside internal cleanup if we keep the subscription ref
+        };
     }, []);
 
     const fetchUserProfile = async (userId: string) => {
@@ -198,7 +220,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     user: mockUser,
                     session: mockSession,
                     profile: mockProfile,
-                    role: { role: 'student' }
+                    role: { role }
                 }));
 
                 return {};
@@ -279,13 +301,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setSession(mockSession);
                 setUser(mockUser);
                 setProfile(mockProfile);
-                setUserRole({ role: 'student' });
+
+                const role = email.toLowerCase().startsWith('admin') ? 'admin' : 'student';
+                setUserRole({ role: role as 'admin' | 'student' });
 
                 localStorage.setItem('dme_mock_session', JSON.stringify({
                     user: mockUser,
                     session: mockSession,
                     profile: mockProfile,
-                    role: { role: 'student' }
+                    role: { role }
                 }));
 
                 return {};
