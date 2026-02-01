@@ -4,8 +4,8 @@ import type { NextConfig } from "next";
 
 const withPWA = withPWAInit({
   dest: "public",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
+  cacheOnFrontEndNav: false,
+  aggressiveFrontEndNavCaching: false,
   reloadOnOnline: true,
   disable: false, // Enable in dev for testing if needed, usually process.env.NODE_ENV === 'development'
   workboxOptions: {
