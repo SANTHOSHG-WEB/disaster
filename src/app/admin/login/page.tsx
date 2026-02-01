@@ -22,15 +22,8 @@ export default function AdminLoginPage() {
     const handleAdminLogin = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Specific check to enforce admin email
-        if (email !== 'admin@dme.com') {
-            toast({
-                title: "Access Denied",
-                description: "This portal is restricted to administrators only.",
-                variant: "destructive"
-            });
-            return;
-        }
+        // Specific check to enforce admin access logic is now handled by role verification
+        // in the dashboard itself. No need for hardcoded email check here.
 
         const { error } = await login(email, password);
 
@@ -67,7 +60,7 @@ export default function AdminLoginPage() {
                                 <Input
                                     id="email"
                                     type="email"
-                                    placeholder="admin@dme.com"
+                                    placeholder="admin@school.org"
                                     required
                                     className="pl-10 glass"
                                     value={email}

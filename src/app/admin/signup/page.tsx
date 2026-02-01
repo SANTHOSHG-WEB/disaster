@@ -55,15 +55,7 @@ export default function AdminSignup() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Safety check for user's desired admin email
-        if (formData.email !== 'admin@dme.com') {
-            toast({
-                title: "Invalid Email",
-                description: "Only admin@dme.com can register as a system administrator.",
-                variant: "destructive"
-            });
-            return;
-        }
+        // Email restriction removed to allow institutional admins to register with their own emails.
 
         const { error } = await signup(formData.email, formData.password, {
             full_name: formData.adminName,

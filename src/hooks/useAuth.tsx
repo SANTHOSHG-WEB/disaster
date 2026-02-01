@@ -184,7 +184,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(mockUser);
                 setProfile(mockProfile);
 
-                const role = email === 'admin@dme.com' ? 'admin' : 'student';
+                const role = email.toLowerCase().startsWith('admin') ? 'admin' : 'student';
                 setUserRole({ role: role as 'admin' | 'student' });
 
                 localStorage.setItem('dme_mock_session', JSON.stringify({

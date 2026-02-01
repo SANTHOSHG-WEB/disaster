@@ -85,7 +85,7 @@ begin
   values (new.id, new.id, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url');
   
   insert into public.user_roles (user_id, role)
-  values (new.id, case when new.email = 'admin@dme.com' then 'admin' else 'student' end);
+  values (new.id, coalesce(new.raw_user_meta_data->>'role', 'student'));
   
   return new;
 end;
