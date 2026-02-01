@@ -4,43 +4,43 @@
 
 @layer base {
   :root {
-    --background: 210 30% 8%;
-    --foreground: 210 40% 98%;
+    --background: 30 15% 10%;
+    --foreground: 40 30% 98%;
 
-    --glass: 210 40% 12%;
-    --glass-border: 210 50% 25%;
-    --glass-foreground: 210 40% 98%;
+    --glass: 30 15% 15%;
+    --glass-border: 14 50% 35%;
+    --glass-foreground: 40 30% 98%;
 
-    --primary: 214 100% 59%;
-    --primary-dark: 214 100% 49%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 14 80% 60%;
+    --primary-dark: 14 80% 50%;
+    --primary-foreground: 40 30% 98%;
 
-    --secondary: 220 50% 15%;
-    --secondary-foreground: 210 40% 95%;
+    --secondary: 150 25% 45%;
+    --secondary-foreground: 40 30% 95%;
 
-    --emergency: 0 84% 60%;
-    --emergency-foreground: 210 40% 98%;
+    --emergency: 0 85% 60%;
+    --emergency-foreground: 40 30% 98%;
 
-    --success: 120 60% 50%;
-    --success-foreground: 210 40% 98%;
+    --success: 120 40% 55%;
+    --success-foreground: 40 30% 98%;
 
-    --warning: 45 100% 60%;
-    --warning-foreground: 220 100% 10%;
+    --warning: 45 90% 60%;
+    --warning-foreground: 30 100% 10%;
 
-    --muted: 220 30% 20%;
-    --muted-foreground: 215 20% 70%;
+    --muted: 30 10% 25%;
+    --muted-foreground: 30 10% 75%;
 
-    --accent: 200 100% 50%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 38 90% 60%;
+    --accent-foreground: 40 30% 98%;
 
-    --border: 220 50% 25%;
-    --input: 220 50% 15%;
-    --ring: 220 100% 50%;
+    --border: 30 20% 25%;
+    --input: 30 20% 18%;
+    --ring: 14 80% 60%;
 
-    --shadow-light: 220 100% 15%;
-    --shadow-dark: 220 100% 5%;
+    --shadow-light: 30 20% 20%;
+    --shadow-dark: 30 20% 5%;
 
-    --radius: 1rem;
+    --radius: 1.25rem;
   }
 }
 
@@ -51,7 +51,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    background: linear-gradient(135deg, hsl(210 30% 8%), hsl(214 30% 12%));
+    background: radial-gradient(circle at top left, hsl(30 15% 12%), hsl(30 15% 8%));
     min-height: 100vh;
   }
 }
@@ -59,11 +59,11 @@
 /* Glassmorphism & Neumorphism Helpers */
 .glass {
   background: hsl(var(--glass) / 0.7);
-  backdrop-filter: blur(20px);
-  border: 1px solid hsl(var(--glass-border) / 0.3);
+  backdrop-filter: blur(24px);
+  border: 1px solid hsl(var(--glass-border) / 0.2);
   box-shadow:
-    0 8px 32px hsl(var(--shadow-dark) / 0.3),
-    inset 0 1px 0 hsl(var(--glass-border) / 0.2);
+    0 10px 40px hsl(var(--shadow-dark) / 0.4),
+    inset 0 1px 0 hsl(var(--glass-border) / 0.1);
 }
 
 .neumorphic {
