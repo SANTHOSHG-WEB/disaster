@@ -41,7 +41,11 @@ export default function Learning() {
         <div className="container mx-auto max-w-6xl px-4 py-8">
             {user && (
                 <div className="mb-8 text-center bg-glass/30 p-4 rounded-2xl border border-glass-border">
-                    <p className="text-lg text-glass-foreground">Welcome back, <span className="font-bold">{profile?.full_name || user.email}</span></p>
+                    <p className="text-lg text-glass-foreground">
+                        Welcome back, <span className="font-bold">
+                            {profile?.full_name || user.user_metadata?.full_name || user.email}
+                        </span>
+                    </p>
                 </div>
             )}
 
