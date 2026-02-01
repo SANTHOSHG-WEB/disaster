@@ -4,41 +4,41 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 220 40% 12%;
+    --background: 210 20% 98%;
+    --foreground: 210 30% 12%;
 
     --glass: 0 0% 100%;
-    --glass-border: 210 30% 85%;
-    --glass-foreground: 220 40% 12%;
+    --glass-border: 210 20% 88%;
+    --glass-foreground: 210 30% 15%;
 
-    --primary: 230 60% 50%;
-    --primary-dark: 230 60% 40%;
+    --primary: 215 70% 45%;
+    --primary-dark: 215 70% 35%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 160 50% 35%;
+    --secondary: 155 45% 40%;
     --secondary-foreground: 0 0% 100%;
 
     --emergency: 0 85% 55%;
     --emergency-foreground: 0 0% 100%;
 
-    --success: 142 70% 35%;
+    --success: 155 45% 40%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 90% 50%;
-    --warning-foreground: 220 40% 12%;
+    --warning: 38 100% 55%;
+    --warning-foreground: 210 30% 12%;
 
-    --muted: 210 20% 94%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 210 20% 92%;
+    --muted-foreground: 210 10% 45%;
 
-    --accent: 230 60% 50%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 38 100% 55%;
+    --accent-foreground: 210 30% 12%;
 
-    --border: 214 30% 90%;
-    --input: 214 30% 95%;
-    --ring: 230 60% 50%;
+    --border: 210 20% 88%;
+    --input: 210 20% 92%;
+    --ring: 215 70% 45%;
 
     --shadow-light: 0 0% 100%;
-    --shadow-dark: 210 30% 85%;
+    --shadow-dark: 210 20% 85%;
 
     --radius: 1.25rem;
   }
@@ -51,7 +51,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    background: radial-gradient(circle at top right, hsl(210 40% 100%), hsl(210 20% 96%));
+    background: linear-gradient(135deg, hsl(210 20% 98%) 0%, hsl(210 20% 94%) 100%);
     min-height: 100vh;
   }
 }
