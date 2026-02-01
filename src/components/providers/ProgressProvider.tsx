@@ -54,100 +54,141 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
     }, [user?.id]);
 
-    // 1. Load from LocalStorage on mount
+    // DB Sync & Reconciliation
     useEffect(() => {
-        if (user && !isLoaded) {
-            const savedProgress = localStorage.getItem(`dme_progress_${user.id}`);
-            if (savedProgress) {
-                try {
-                    const parsed = JSON.parse(savedProgress);
-                    setProgress(parsed);
-                    console.log("Progress Sync: LocalStorage loaded for", user.id);
-                } catch (e) {
-                    console.error("Failed to parse progress", e);
-                }
-            }
-        }
-    }, [user?.id, isLoaded]);
-
-    // DB Sync
-    useEffect(() => {
-        const loadFromDb = async () => {
+        const reconcileProgress = async () => {
             if (!user?.id) {
-                console.log("Progress Sync: No user, skipping DB load.");
+                console.log("Progress Sync: No user, skipping reconciliation.");
                 setIsLoaded(true);
                 return;
             }
 
-            console.log("Progress Sync: Starting load from API...", { userId: user.id });
+            console.log("Progress Sync: Initializing reconciliation for", user.id);
+
+            // 1. Load what we have in LocalStorage as a baseline
+            let currentLocal: UserProgress = { modules: {}, points: 0, badges: [], certificateEarned: false };
+            const savedProgress = localStorage.getItem(`dme_progress_${user.id}`);
+            if (savedProgress) {
+                try {
+                    currentLocal = JSON.parse(savedProgress);
+                    console.log("Progress Sync: Baseline loaded from LocalStorage.");
+                } catch (e) {
+                    console.error("Progress Sync: Failed to parse LocalStorage baseline", e);
+                }
+            }
 
             try {
+                // 2. Fetch from DB
                 const response = await fetch('/api/progress');
                 if (!response.ok) {
-                    if (response.status === 401) {
-                        console.warn("Progress Sync: User not authenticated on server. Data might not sync.");
-                    }
-                    throw new Error(`Failed to fetch progress: ${response.statusText}`);
+                    throw new Error(`API Fetch failed: ${response.statusText}`);
                 }
-                const data = await response.json();
+                const dbData = await response.json();
+                console.log("Progress Sync: DB data received:", dbData);
 
-                console.log("Progress Sync: Data received from API:", data);
+                // 3. Merge Logic (Reconciliation)
+                const mergedModules = { ...currentLocal.modules };
+                let localHasUnsyncedData = false;
 
-                if (data && data.length > 0) {
-                    setProgress(prev => {
-                        const modulesFromDb: Record<string, ModuleProgress> = { ...prev.modules };
-
-                        data.forEach((row: any) => {
-                            // Priority logic: merge DB data into local state
-                            const isDone = row.quiz_completed && row.video_watched && row.game_completed;
-                            modulesFromDb[row.module_id] = {
-                                moduleId: row.module_id,
-                                videoWatched: row.video_watched || false,
-                                gameCompleted: row.game_completed || false,
-                                quizCompleted: row.quiz_completed || false,
-                                score: row.quiz_score || 0,
-                                completedAt: isDone ? row.updated_at : (prev.modules[row.module_id]?.completedAt || undefined)
-                            };
-                        });
-
-                        // Recalculate derived state
-                        let totalPoints = 0;
-                        let completedModules = 0;
-                        const earnedBadges: string[] = [];
-
-                        Object.values(modulesFromDb).forEach(m => {
-                            if (m.quizCompleted) {
-                                completedModules++;
-                                totalPoints += 100 + m.score;
-                                earnedBadges.push(`badge-module-${m.moduleId}`);
-                            }
-                        });
-
-                        if (completedModules >= 10) {
-                            earnedBadges.push('badge-master-disaster-manager');
-                        }
-
-                        return {
-                            ...prev,
-                            modules: modulesFromDb,
-                            points: totalPoints,
-                            badges: earnedBadges,
-                            certificateEarned: completedModules >= 10,
+                if (dbData && dbData.length > 0) {
+                    dbData.forEach((row: any) => {
+                        const dbMod: ModuleProgress = {
+                            moduleId: row.module_id,
+                            videoWatched: row.video_watched || false,
+                            gameCompleted: row.game_completed || false,
+                            quizCompleted: row.quiz_completed || false,
+                            score: row.quiz_score || 0,
+                            completedAt: (row.quiz_completed && row.video_watched && row.game_completed) ? row.updated_at : undefined
                         };
+
+                        const localMod = mergedModules[row.module_id];
+
+                        // Merge: DB wins on completion OR if local is behind
+                        if (!localMod || dbMod.completedAt || dbMod.score > localMod.score) {
+                            mergedModules[row.module_id] = dbMod;
+                        } else if (localMod.completedAt && !dbMod.completedAt) {
+                            // Local has more progress! Flag for Sync-Up
+                            localHasUnsyncedData = true;
+                        }
                     });
-                    console.log("Progress Sync: State successfully merged with DB data");
-                } else {
-                    console.log("Progress Sync: No DB data found, proceeding with local/empty state.");
+                } else if (Object.keys(mergedModules).length > 0) {
+                    // DB is empty but local has data -> Flag for Sync-Up
+                    console.log("Progress Sync: DB is empty, local data detected. Will sync up.");
+                    localHasUnsyncedData = true;
                 }
+
+                // 4. Update state with merged data
+                const finalProgress = recalculateStats(mergedModules);
+                setProgress(finalProgress);
+
+                // 5. Sync-Up Side Effect: Push local-only progress to DB
+                if (localHasUnsyncedData) {
+                    console.log("Progress Sync: Triggering sync-up for local-only data...");
+                    Object.values(mergedModules).forEach(mod => {
+                        // Only sync modules that have at least some progress
+                        if (mod.videoWatched || mod.gameCompleted || mod.quizCompleted) {
+                            syncToDb(mod);
+                        }
+                    });
+                }
+
+                console.log("Progress Sync: Reconciliation complete.");
             } catch (error) {
-                console.error("Progress Sync: Error loading through API:", error);
+                console.error("Progress Sync: Error during reconciliation:", error);
+                // On failure, we at least have LocalStorage (from step 1)
+                setProgress(currentLocal);
             } finally {
                 setIsLoaded(true);
             }
         };
 
-        loadFromDb();
+        reconcileProgress();
     }, [user?.id]);
+
+    const recalculateStats = (modules: Record<string, ModuleProgress>): UserProgress => {
+        let totalPoints = 0;
+        let completedModules = 0;
+        const earnedBadges: string[] = [];
+
+        Object.values(modules).forEach(m => {
+            const isDone = m.quizCompleted && m.videoWatched && m.gameCompleted;
+            if (isDone) {
+                completedModules++;
+                totalPoints += 100 + m.score;
+                earnedBadges.push(`badge-module-${m.moduleId}`);
+            }
+        });
+
+        if (completedModules >= 10) {
+            earnedBadges.push('badge-master-disaster-manager');
+        }
+
+        return {
+            modules,
+            points: totalPoints,
+            badges: earnedBadges,
+            certificateEarned: completedModules >= 10,
+        };
+    };
+
+    const syncToDb = async (module: ModuleProgress) => {
+        try {
+            await fetch('/api/progress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    moduleId: module.moduleId,
+                    videoWatched: module.videoWatched,
+                    gameCompleted: module.gameCompleted,
+                    quizCompleted: module.quizCompleted,
+                    score: module.score,
+                    status: (module.quizCompleted && module.videoWatched && module.gameCompleted) ? 'completed' : 'in-progress',
+                }),
+            });
+        } catch (e) {
+            console.error("Progress Sync: Sync-up failed for module", module.moduleId, e);
+        }
+    };
 
     // 3. Save to LocalStorage ONLY after initial load is complete
     useEffect(() => {
