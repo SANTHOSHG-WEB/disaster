@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
-import { HandPointer, Info, CheckCircle2 } from 'lucide-react';
+import { MousePointer2, Info, CheckCircle2 } from 'lucide-react';
 
 interface DragDropItem {
     id: number;
@@ -134,7 +134,7 @@ const DragDropGame: React.FC<DragDropGameProps> = ({ data, onComplete, isActive 
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             draggable
-                            onDragStart={e => handleDragStart(e, item)}
+                            onDragStart={(e: any) => handleDragStart(e, item)}
                             onClick={() => handleItemClick(item)}
                             className="px-5 py-3 rounded-2xl font-bold text-sm transition-colors border shadow-sm flex items-center gap-2 group"
                             style={{
@@ -144,7 +144,7 @@ const DragDropGame: React.FC<DragDropGameProps> = ({ data, onComplete, isActive 
                             }}
                         >
                             {item.text}
-                            <HandPointer size={14} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+                            <MousePointer2 size={14} className="opacity-0 group-hover:opacity-40 transition-opacity" />
                         </motion.button>
                     ))}
                 </AnimatePresence>
