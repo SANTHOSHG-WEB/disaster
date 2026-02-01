@@ -70,93 +70,77 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
     }, [user?.id, isLoaded]);
 
-    // DB Sync (Skipped in Mock Mode)
+    // DB Sync
     useEffect(() => {
         const loadFromDb = async () => {
-            if (!user) {
+            if (!user?.id) {
                 console.log("Progress Sync: No user, skipping DB load.");
-                setIsLoaded(true); // Don't block UI if logged out
-                return;
-            }
-
-            // internal check for mock mode
-            const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-            const isMockMode = url?.includes('your-project');
-
-            console.log("Progress Sync: Starting load...", { isMockMode, userId: user.id });
-
-            if (isMockMode) {
-                console.log("Progress Sync: In mock mode, using LocalStorage only.");
                 setIsLoaded(true);
                 return;
             }
 
-            const { data, error } = await supabase
-                .from('module_progress')
-                .select('*')
-                .eq('user_id', user.id);
+            console.log("Progress Sync: Starting load from API...", { userId: user.id });
 
-            if (error) {
-                console.error("Progress Sync: Error loading from Supabase. Raw error:", error);
-                console.error("Progress Sync: Error details:", {
-                    message: error.message,
-                    details: error.details,
-                    hint: error.hint,
-                    code: error.code
-                });
-                setIsLoaded(true);
-                return;
-            }
+            try {
+                const response = await fetch('/api/progress');
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch progress: ${response.statusText}`);
+                }
+                const data = await response.json();
 
-            console.log("Progress Sync: Data received from Supabase:", data);
+                console.log("Progress Sync: Data received from API:", data);
 
-            if (data && data.length > 0) {
-                setProgress(prev => {
-                    const modulesFromDb: Record<string, ModuleProgress> = { ...prev.modules };
+                if (data && data.length > 0) {
+                    setProgress(prev => {
+                        const modulesFromDb: Record<string, ModuleProgress> = { ...prev.modules };
 
-                    data.forEach((row: any) => {
-                        // Priority: If DB says it's completed, it's completed.
-                        const isDone = row.quiz_completed && row.video_watched && row.game_completed;
-                        modulesFromDb[row.module_id] = {
-                            moduleId: row.module_id,
-                            videoWatched: row.video_watched || false,
-                            gameCompleted: row.game_completed || false,
-                            quizCompleted: row.quiz_completed || false,
-                            score: row.quiz_score || 0,
-                            completedAt: isDone ? row.updated_at : (prev.modules[row.module_id]?.completedAt || undefined)
+                        data.forEach((row: any) => {
+                            // Priority logic: merge DB data into local state
+                            const isDone = row.quiz_completed && row.video_watched && row.game_completed;
+                            modulesFromDb[row.module_id] = {
+                                moduleId: row.module_id,
+                                videoWatched: row.video_watched || false,
+                                gameCompleted: row.game_completed || false,
+                                quizCompleted: row.quiz_completed || false,
+                                score: row.quiz_score || 0,
+                                completedAt: isDone ? row.updated_at : (prev.modules[row.module_id]?.completedAt || undefined)
+                            };
+                        });
+
+                        // Recalculate derived state
+                        let totalPoints = 0;
+                        let completedModules = 0;
+                        const earnedBadges: string[] = [];
+
+                        Object.values(modulesFromDb).forEach(m => {
+                            if (m.quizCompleted) {
+                                completedModules++;
+                                totalPoints += 100 + m.score;
+                                earnedBadges.push(`badge-module-${m.moduleId}`);
+                            }
+                        });
+
+                        if (completedModules >= 10) {
+                            earnedBadges.push('badge-master-disaster-manager');
+                        }
+
+                        return {
+                            ...prev,
+                            modules: modulesFromDb,
+                            points: totalPoints,
+                            badges: earnedBadges,
+                            certificateEarned: completedModules >= 10,
                         };
                     });
-
-                    // Recalculate points/stats/badges
-                    let totalPoints = 0;
-                    let completedModules = 0;
-                    const earnedBadges: string[] = [];
-
-                    Object.values(modulesFromDb).forEach(m => {
-                        if (m.quizCompleted) {
-                            completedModules++;
-                            totalPoints += 100 + m.score;
-                            earnedBadges.push(`badge-module-${m.moduleId}`);
-                        }
-                    });
-
-                    if (completedModules >= 10) {
-                        earnedBadges.push('badge-master-disaster-manager');
-                    }
-
-                    return {
-                        ...prev,
-                        modules: modulesFromDb,
-                        points: totalPoints,
-                        badges: earnedBadges,
-                        certificateEarned: completedModules >= 10,
-                    };
-                });
-                console.log("Progress Sync: State successfully merged with DB data");
-            } else {
-                console.log("Progress Sync: No DB data found, proceeding with local/empty state.");
+                    console.log("Progress Sync: State successfully merged with DB data");
+                } else {
+                    console.log("Progress Sync: No DB data found, proceeding with local/empty state.");
+                }
+            } catch (error) {
+                console.error("Progress Sync: Error loading through API:", error);
+            } finally {
+                setIsLoaded(true);
             }
-            setIsLoaded(true);
         };
 
         loadFromDb();
@@ -218,36 +202,37 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
 
             // Async DB Sync (performed as a side effect outside of functional update)
-            setTimeout(() => {
-                const canSave = !isMockMode && user?.id && isLoaded;
+            setTimeout(async () => {
+                const canSave = user?.id && isLoaded;
                 if (canSave) {
-                    console.log("Progress Sync: Saving to Supabase...", { moduleId, updates });
-                    supabase
-                        .from('module_progress')
-                        .upsert({
-                            user_id: user.id,
-                            module_id: moduleId,
-                            video_watched: updatedModule.videoWatched,
-                            game_completed: updatedModule.gameCompleted,
-                            quiz_completed: updatedModule.quizCompleted,
-                            quiz_score: updatedModule.score,
-                            status: isDone ? 'completed' : 'in-progress',
-                            updated_at: new Date().toISOString()
-                        }, {
-                            onConflict: 'user_id,module_id'
-                        })
-                        .then(({ error }: { error: any }) => {
-                            if (error) {
-                                console.error("Progress Sync: Error saving to DB:", error);
-                            } else {
-                                console.log("Progress Sync: Successfully saved to DB.");
-                            }
-                        })
-                        .catch((err: any) => {
-                            console.error("Progress Sync: Critical saving error:", err);
+                    console.log("Progress Sync: Saving to API...", { moduleId, updates });
+                    try {
+                        const response = await fetch('/api/progress', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                moduleId,
+                                videoWatched: updatedModule.videoWatched,
+                                gameCompleted: updatedModule.gameCompleted,
+                                quizCompleted: updatedModule.quizCompleted,
+                                score: updatedModule.score,
+                                status: isDone ? 'completed' : 'in-progress',
+                            }),
                         });
+
+                        if (!response.ok) {
+                            throw new Error(`Failed to save progress: ${response.statusText}`);
+                        }
+
+                        const result = await response.json();
+                        console.log("Progress Sync: Successfully saved to API:", result);
+                    } catch (error) {
+                        console.error("Progress Sync: Error saving through API:", error);
+                    }
                 } else {
-                    console.log("Progress Sync: Save skipped", { isMockMode, hasUser: !!user, isLoaded });
+                    console.log("Progress Sync: Save skipped", { hasUser: !!user, isLoaded });
                 }
             }, 0);
 
