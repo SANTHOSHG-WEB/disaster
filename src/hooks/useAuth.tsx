@@ -75,12 +75,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Check for existing session
-        supabase.auth.getSession().then(({ data: { session } }: any) => {
+        supabase.auth.getSession().then(async ({ data: { session } }: any) => {
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                fetchUserProfile(session.user.id);
-                fetchUserRole(session.user.id);
+                // Await these to ensure the role/profile is available before isLoading becomes false
+                await Promise.all([
+                    fetchUserProfile(session.user.id),
+                    fetchUserRole(session.user.id)
+                ]);
             }
             setIsLoading(false);
         }).catch(() => {
@@ -89,12 +92,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event: any, session: any) => {
+                console.log("Auth State Change:", event, session?.user?.email);
                 setSession(session);
                 setUser(session?.user ?? null);
 
                 if (session?.user) {
-                    await fetchUserProfile(session.user.id);
-                    await fetchUserRole(session.user.id);
+                    // Await these so that components depending on userRole see it correctly 
+                    // before isLoading flips to false (if it was true)
+                    await Promise.all([
+                        fetchUserProfile(session.user.id),
+                        fetchUserRole(session.user.id)
+                    ]);
                 } else {
                     setProfile(null);
                     setUserRole(null);

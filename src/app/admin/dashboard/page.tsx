@@ -15,7 +15,7 @@ interface StudentData {
 }
 
 export default function AdminDashboard() {
-    const { user, userRole, logout } = useAuth();
+    const { user, userRole, logout, isLoading } = useAuth();
     const [stats, setStats] = useState({
         totalStudents: 0,
         activeModules: 10,
@@ -71,6 +71,15 @@ export default function AdminDashboard() {
 
         fetchAdminData();
     }, [user, userRole]);
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+                <Loader2 className="h-12 w-12 text-primary animate-spin" />
+                <p className="text-muted-foreground animate-pulse">Verifying administrative access...</p>
+            </div>
+        );
+    }
 
     if (!user || userRole?.role !== 'admin') {
         return (
