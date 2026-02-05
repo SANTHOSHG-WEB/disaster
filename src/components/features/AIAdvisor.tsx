@@ -17,6 +17,11 @@ export default function AIAdvisor({ modules, progress }: AIAdvisorProps) {
     const [advice, setAdvice] = useState<string>("");
     const [isTyping, setIsTyping] = useState(true);
     const [recommendation, setRecommendation] = useState<any>(null);
+    const [stats, setStats] = useState<{ avgScore: number; completionRate: number; hasProgress: boolean }>({
+        avgScore: 0,
+        completionRate: 0,
+        hasProgress: false
+    });
 
     useEffect(() => {
         // Simulate AI "Thinking"
@@ -29,23 +34,105 @@ export default function AIAdvisor({ modules, progress }: AIAdvisorProps) {
     }, [progress, modules]);
 
     const analyzeProgress = () => {
-        // Simple Rule-Based AI Logic
-        const completedModules = Object.values(progress.modules).filter((m: any) => m.completedAt).length;
+        // Enhanced AI Logic with Engagement Analytics
+        const completedModules = Object.values(progress.modules).filter((m: any) => m.completedAt);
+        const allModules = Object.values(progress.modules);
 
+        // Calculate engagement metrics
+        let totalScore = 0;
+        let scoredModules = 0;
+        const weakModules: any[] = [];
+        const incompleteActivities: any[] = [];
+
+        allModules.forEach((mod: any) => {
+            // Track quiz scores
+            if (mod.quizCompleted && mod.score !== undefined) {
+                totalScore += mod.score;
+                scoredModules++;
+
+                // Identify weak areas (score < 70%)
+                if (mod.score < 70) {
+                    const moduleData = modules.find(m => m.id === mod.moduleId);
+                    weakModules.push({
+                        id: mod.moduleId,
+                        title: moduleData?.title || `Module ${mod.moduleId}`,
+                        score: mod.score
+                    });
+                }
+            }
+
+            // Detect incomplete activities
+            const hasActivity = mod.videoWatched || mod.gameCompleted || mod.quizCompleted;
+            const isComplete = mod.videoWatched && mod.gameCompleted && mod.quizCompleted;
+            if (hasActivity && !isComplete) {
+                const moduleData = modules.find(m => m.id === mod.moduleId);
+                incompleteActivities.push({
+                    id: mod.moduleId,
+                    title: moduleData?.title || `Module ${mod.moduleId}`,
+                    missing: [
+                        !mod.videoWatched && 'Video',
+                        !mod.gameCompleted && 'Game',
+                        !mod.quizCompleted && 'Quiz'
+                    ].filter(Boolean)
+                });
+            }
+        });
+
+        const avgScore = scoredModules > 0 ? Math.round(totalScore / scoredModules) : 0;
+        const completionRate = modules.length > 0 ? Math.round((completedModules.length / modules.length) * 100) : 0;
+
+        // Update stats for UI display
+        setStats({
+            avgScore,
+            completionRate,
+            hasProgress: scoredModules > 0 || completedModules.length > 0
+        });
+
+        // Generate intelligent recommendations
+        let adviceText = "";
         let nextModule = modules.find(m => {
             const modProgress = progress.modules[m.id];
             return !modProgress?.completedAt;
         });
 
-        if (nextModule) {
-            setRecommendation(nextModule);
-            setAdvice(`Based on your progress, I recommend diving into "${nextModule.title}". It's the next logical step to build your disaster resilience.`);
-        } else if (completedModules === modules.length) {
-            setAdvice("Impressive! You've completed all available modules. You're now a certified disaster preparedness expert. Consider reviewing 'First Aid Basics' to keep your skills sharp.");
-        } else {
-            setAdvice("Welcome to your learning journey! Start with Module 1 to build a strong foundation in safety protocols.");
-            setRecommendation(modules[0]);
+        // Priority 1: Incomplete activities in current modules
+        if (incompleteActivities.length > 0) {
+            const incomplete = incompleteActivities[0];
+            adviceText = `I notice you've started "${incomplete.title}" but haven't completed all activities. Finishing ${incomplete.missing.join(' and ')} will help reinforce your learning and unlock the next module!`;
+            setRecommendation(modules.find(m => m.id === incomplete.id));
         }
+        // Priority 2: Weak areas that need review
+        else if (weakModules.length > 0) {
+            const weakest = weakModules.sort((a, b) => a.score - b.score)[0];
+            adviceText = `Your quiz score for "${weakest.title}" was ${weakest.score}%. I recommend reviewing this module to strengthen your understanding. Disaster preparedness requires solid fundamentals!`;
+            setRecommendation(modules.find(m => m.id === weakest.id));
+        }
+        // Priority 3: High performer - encourage progression
+        else if (avgScore >= 80 && completedModules.length > 0) {
+            if (nextModule) {
+                adviceText = `Excellent work! You're maintaining an impressive ${avgScore}% average. Your strong foundation makes you ready for "${nextModule.title}". Keep up this outstanding performance!`;
+                setRecommendation(nextModule);
+            } else {
+                adviceText = `Outstanding achievement! You've completed all modules with a ${avgScore}% average. You're now a certified disaster preparedness expert. Consider reviewing key modules to maintain your expertise.`;
+                setRecommendation(modules[0]); // Suggest reviewing first module
+            }
+        }
+        // Priority 4: Standard progression
+        else if (nextModule) {
+            if (completedModules.length > 0) {
+                adviceText = `You're making steady progress with a ${avgScore}% average. Ready for the next challenge? "${nextModule.title}" builds on what you've learned and introduces critical new skills.`;
+            } else {
+                adviceText = `Welcome to your learning journey! Start with "${nextModule.title}" to build a strong foundation in disaster preparedness. Each module includes engaging videos, interactive games, and knowledge checks.`;
+            }
+            setRecommendation(nextModule);
+        }
+        // Priority 5: All complete
+        else {
+            adviceText = `Congratulations! You've completed all ${modules.length} modules with a ${avgScore}% average. You're now equipped to handle emergency situations confidently. Keep your skills sharp by reviewing key topics!`;
+            setRecommendation(weakModules.length > 0 ? modules.find(m => m.id === weakModules[0].id) : modules[0]);
+        }
+
+        setAdvice(adviceText);
     };
 
     return (
@@ -95,6 +182,39 @@ export default function AIAdvisor({ modules, progress }: AIAdvisorProps) {
                                 </motion.p>
                             )}
                         </div>
+
+                        {/* Engagement Stats */}
+                        {stats.hasProgress && !isTyping && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="grid grid-cols-2 gap-3"
+                            >
+                                <div className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg p-3 border border-primary/20">
+                                    <div className="text-xs text-muted-foreground mb-1">Avg Quiz Score</div>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className={`text-2xl font-bold ${stats.avgScore >= 80 ? 'text-emerald-500' :
+                                                stats.avgScore >= 70 ? 'text-amber-500' :
+                                                    'text-red-500'
+                                            }`}>
+                                            {stats.avgScore}%
+                                        </span>
+                                        <span className="text-xs font-medium">
+                                            {stats.avgScore >= 80 ? '🌟 Excellent' :
+                                                stats.avgScore >= 70 ? '👍 Good' :
+                                                    '📚 Needs Review'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="bg-gradient-to-br from-accent/10 to-primary/10 rounded-lg p-3 border border-accent/20">
+                                    <div className="text-xs text-muted-foreground mb-1">Course Progress</div>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-2xl font-bold text-accent">{stats.completionRate}%</span>
+                                        <span className="text-xs font-medium text-muted-foreground">Complete</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
 
                         {recommendation && !isTyping && (
                             <motion.div
