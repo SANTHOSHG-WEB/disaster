@@ -34,12 +34,14 @@ const DragDropGame: React.FC<DragDropGameProps> = ({ data, onComplete, isActive 
     const [isCompleted, setIsCompleted] = useState(false);
 
     // Warm, earthy color palette for "Human Touch"
-    const colors = {
-        sand: "#fdf5e6", // OldLace/Sand
-        terracotta: "#e2725b", // Human-made
-        sage: "#87a96b", // Natural
-        clay: "#b87333", // Selection/Highlight
-        paper: "#fffaf0" // FloralWhite
+    // Theme colors using CSS variables for consistency
+    const themeColors = {
+        neutral: "var(--muted)",
+        trust: "var(--primary)",
+        success: "var(--secondary)",
+        focus: "var(--accent)",
+        base: "var(--background)",
+        text: "var(--foreground)"
     };
 
     const handleDragStart = (e: React.DragEvent, item: DragDropItem) => {
@@ -117,7 +119,7 @@ const DragDropGame: React.FC<DragDropGameProps> = ({ data, onComplete, isActive 
             {/* Available Items Pool */}
             <div
                 className="p-6 rounded-3xl shadow-inner min-h-[100px] flex flex-wrap gap-3 items-center justify-center border-2 border-dashed border-muted/20"
-                style={{ backgroundColor: colors.sand + '33' }}
+                style={{ backgroundColor: "hsl(var(--muted) / 0.2)" }}
             >
                 <AnimatePresence>
                     {availableItems.map(item => (
@@ -128,7 +130,7 @@ const DragDropGame: React.FC<DragDropGameProps> = ({ data, onComplete, isActive 
                             animate={{
                                 scale: 1,
                                 opacity: 1,
-                                boxShadow: selectedItem?.id === item.id ? "0 0 0 3px #b87333" : "0 4px 6px -1px rgb(0 0 0 / 0.1)"
+                                boxShadow: selectedItem?.id === item.id ? "0 0 0 3px hsl(var(--primary))" : "0 4px 6px -1px rgb(0 0 0 / 0.1)"
                             }}
                             exit={{ scale: 0, opacity: 0 }}
                             whileHover={{ scale: 1.05 }}
@@ -138,9 +140,9 @@ const DragDropGame: React.FC<DragDropGameProps> = ({ data, onComplete, isActive 
                             onClick={() => handleItemClick(item)}
                             className="px-5 py-3 rounded-2xl font-bold text-sm transition-colors border shadow-sm flex items-center gap-2 group"
                             style={{
-                                backgroundColor: colors.sand,
-                                color: "#4a3728",
-                                borderColor: selectedItem?.id === item.id ? colors.clay : "#eaddca"
+                                backgroundColor: "hsl(var(--background))",
+                                color: "hsl(var(--foreground))",
+                                borderColor: selectedItem?.id === item.id ? "hsl(var(--primary))" : "hsl(var(--border))"
                             }}
                         >
                             {item.text}
@@ -164,20 +166,20 @@ const DragDropGame: React.FC<DragDropGameProps> = ({ data, onComplete, isActive 
                         onDragOver={e => e.preventDefault()}
                         onClick={() => handleCategoryClick(cat.id)}
                         whileHover={{ scale: 1.01 }}
-                        className={`relative p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer min-h-[220px] ${selectedItem ? 'border-dashed animate-pulse ring-2 ring-clay/20' : 'border-solid'
+                        className={`relative p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer min-h-[220px] ${selectedItem ? 'border-dashed animate-pulse ring-2 ring-primary/20' : 'border-solid'
                             }`}
                         style={{
-                            backgroundColor: cat.id === 'natural' ? colors.sage + '11' : colors.terracotta + '11',
-                            borderColor: cat.id === 'natural' ? colors.sage + '44' : colors.terracotta + '44'
+                            backgroundColor: cat.id === 'natural' ? "hsl(var(--secondary) / 0.05)" : "hsl(var(--primary) / 0.05)",
+                            borderColor: cat.id === 'natural' ? "hsl(var(--secondary) / 0.2)" : "hsl(var(--primary) / 0.2)"
                         }}
                     >
                         <div className="flex justify-between items-center mb-6">
                             <h4 className="font-black text-sm uppercase tracking-widest opacity-60"
-                                style={{ color: cat.id === 'natural' ? colors.sage : colors.terracotta }}>
+                                style={{ color: cat.id === 'natural' ? "hsl(var(--secondary))" : "hsl(var(--primary))" }}>
                                 {cat.label}
                             </h4>
-                            <div className="p-2 rounded-full" style={{ backgroundColor: cat.id === 'natural' ? colors.sage + '22' : colors.terracotta + '22' }}>
-                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: cat.id === 'natural' ? colors.sage : colors.terracotta }} />
+                            <div className="p-2 rounded-full" style={{ backgroundColor: cat.id === 'natural' ? "hsl(var(--secondary) / 0.1)" : "hsl(var(--primary) / 0.1)" }}>
+                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: cat.id === 'natural' ? "hsl(var(--secondary))" : "hsl(var(--primary))" }} />
                             </div>
                         </div>
 
@@ -190,9 +192,9 @@ const DragDropGame: React.FC<DragDropGameProps> = ({ data, onComplete, isActive 
                                         animate={{ scale: 1, opacity: 1 }}
                                         className="px-4 py-2 rounded-xl text-xs font-bold border flex items-center gap-2"
                                         style={{
-                                            backgroundColor: "white",
-                                            color: cat.id === 'natural' ? colors.sage : colors.terracotta,
-                                            borderColor: "transparent"
+                                            backgroundColor: "hsl(var(--background))",
+                                            color: cat.id === 'natural' ? "hsl(var(--secondary))" : "hsl(var(--primary))",
+                                            borderColor: "hsl(var(--border) / 0.5)"
                                         }}
                                     >
                                         <CheckCircle2 size={12} />
@@ -204,7 +206,7 @@ const DragDropGame: React.FC<DragDropGameProps> = ({ data, onComplete, isActive 
 
                         {selectedItem && (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/5 rounded-[2.5rem] pointer-events-none">
-                                <span className="text-xs font-bold bg-white/90 px-3 py-1 rounded-full shadow-sm border border-clay/20 animate-bounce">
+                                <span className="text-xs font-bold bg-white/90 px-3 py-1 rounded-full shadow-sm border border-primary/20 animate-bounce">
                                     Place here
                                 </span>
                             </div>

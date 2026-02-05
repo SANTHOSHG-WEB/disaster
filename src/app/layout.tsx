@@ -9,9 +9,9 @@ import MobileNavigation from "@/components/layout/MobileNavigation";
 import AIChat from "@/components/layout/AIChat";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { Outfit } from "next/font/google";
 
-const inter = Inter({ subsets: ["latin"] });
+const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Disaster Management Education Platform",
@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={outfit.className}>
         <I18nProvider>
           <AuthProvider>
             <ProgressProvider>

@@ -3,7 +3,8 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Locate } from "lucide-react";
 
 // Fix for default marker icons in Leaflet with Next.js/Webpack
 const DefaultIcon = L.icon({
@@ -48,41 +49,60 @@ const locations: Location[] = [
     { id: 3, lat: 13.0067, lng: 80.2206, name: "Emergency Response Hub", type: "emergency", description: "Ambulance and rescue boats stationed here." },
 ];
 
-function ChangeView({ center, zoom }: { center: [number, number], zoom: number }) {
+function LocateControl() {
     const map = useMap();
-    map.setView(center, zoom);
-    return null;
+
+    const handleLocate = () => {
+        map.locate({ setView: true, maxZoom: 16 });
+    };
+
+    return (
+        <div className="leaflet-bottom leaflet-right">
+            <div className="leaflet-control leaflet-bar">
+                <button
+                    onClick={handleLocate}
+                    className="bg-background hover:bg-muted text-primary p-2 flex items-center justify-center transition-colors w-10 h-10 shadow-lg border-2 border-primary/20"
+                    title="Show my location"
+                    aria-label="Show my location"
+                    style={{ cursor: "pointer" }} // Force pointer for Leaflet control override
+                >
+                    <Locate size={20} />
+                </button>
+            </div>
+        </div>
+    );
 }
 
 export default function MapComponent() {
     return (
-        <div style={{ height: "100%", width: "100%", borderRadius: "var(--radius)", overflow: "hidden" }}>
+        <div className="w-full h-full rounded-xl overflow-hidden relative z-0">
             <MapContainer
                 center={[13.0827, 80.2707]}
                 zoom={12}
-                style={{ height: "100%", width: "100%" }}
-                scrollWheelZoom={false}
+                className="w-full h-full z-0"
+                scrollWheelZoom={true}
             >
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
+                <LocateControl />
                 {locations.map((loc) => (
                     <Marker
                         key={loc.id}
                         position={[loc.lat, loc.lng]}
                         icon={loc.type === "shelter" ? shelterIcon : emergencyIcon}
                     >
-                        <Popup>
-                            <div style={{ padding: "0.5rem" }}>
-                                <h4 style={{ fontWeight: 700, margin: 0 }}>{loc.name}</h4>
-                                <p style={{ margin: "0.5rem 0", fontSize: "0.875rem" }}>{loc.description}</p>
-                                <span style={{
-                                    fontSize: "0.75rem",
-                                    fontWeight: 700,
-                                    color: loc.type === "shelter" ? "#10b981" : "#ef4444",
-                                    textTransform: "uppercase"
-                                }}>
+                        <Popup className="leaflet-popup-rounded">
+                            <div className="p-1 min-w-[200px]">
+                                <h4 className="font-bold text-base m-0 text-foreground">{loc.name}</h4>
+                                <p className="my-2 text-sm text-muted-foreground">{loc.description}</p>
+                                <span className={`
+                                    text-xs font-bold uppercase px-2 py-1 rounded-full
+                                    ${loc.type === "shelter"
+                                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}
+                                `}>
                                     {loc.type}
                                 </span>
                             </div>

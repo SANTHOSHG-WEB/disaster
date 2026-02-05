@@ -125,7 +125,7 @@ const EarthquakeSimulationGame: React.FC<EarthquakeSimulationGameProps> = ({ dat
     if (gameStatus === 'intro') {
         return (
             <div className="text-center p-8 space-y-6">
-                <AlertTriangle className="w-20 h-20 mx-auto text-orange-500 mb-4" />
+                <AlertTriangle className="w-20 h-20 mx-auto text-accent mb-4" />
                 <h2 className="text-2xl font-bold">{data.instruction}</h2>
                 <p className="max-w-md mx-auto text-muted-foreground">
                     You will experience a simulated earthquake. You have limited time to make the correct safety decision for each phase.
