@@ -1,13 +1,17 @@
 "use client";
 
-import { Menu, X, LogOut, Cloud, CloudOff, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Menu, X, LogOut, Cloud, CloudOff, RefreshCw, CheckCircle2, Bot } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { useProgress } from '@/hooks/useProgress';
 
-const Header = () => {
+interface HeaderProps {
+    onAIChatToggle?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onAIChatToggle }) => {
     // const [isMenuOpen, setIsMenuOpen] = useState(false); // Removed state
     const pathname = usePathname();
     const router = useRouter();
@@ -94,6 +98,16 @@ const Header = () => {
                         </nav>
 
                         <div className="hidden md:flex items-center gap-4">
+                            {onAIChatToggle && (
+                                <button
+                                    onClick={onAIChatToggle}
+                                    className="flex items-center gap-2 text-sm font-medium text-primary hover:text-white hover:bg-primary/90 px-3 py-2 rounded-lg transition-colors"
+                                    title="AI Assistant"
+                                >
+                                    <Bot className="h-4 w-4" />
+                                    {t('ai_assistant', 'AI Assistant')}
+                                </button>
+                            )}
                             {user && (
                                 <button
                                     onClick={handleLogout}

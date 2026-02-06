@@ -1,4 +1,6 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useState } from "react";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProgressProvider } from "@/components/providers/ProgressProvider";
@@ -13,19 +15,20 @@ import { Outfit } from "next/font/google";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "Disaster Management Education Platform",
-  description: "Learn. Prepare. Stay Safe. Comprehensive disaster preparedness for schools and colleges.",
-  manifest: "/manifest.json",
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <title>Disaster Management Education Platform</title>
+        <meta name="description" content="Learn. Prepare. Stay Safe. Comprehensive disaster preparedness for schools and colleges." />
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body className={outfit.className}>
         <I18nProvider>
           <AuthProvider>
@@ -37,13 +40,13 @@ export default function RootLayout({
                 disableTransitionOnChange
               >
                 <div className="flex flex-col min-h-screen">
-                  <Header />
+                  <Header onAIChatToggle={() => setIsAIChatOpen(!isAIChatOpen)} />
                   <main className="flex-grow pt-32 pb-24 md:pb-8">
                     {children}
                   </main>
                   <Footer />
-                  <MobileNavigation />
-                  <AIChat />
+                  <MobileNavigation onAIChatToggle={() => setIsAIChatOpen(!isAIChatOpen)} />
+                  <AIChat externalIsOpen={isAIChatOpen} onExternalToggle={setIsAIChatOpen} />
                   <Toaster />
                 </div>
               </ThemeProvider>

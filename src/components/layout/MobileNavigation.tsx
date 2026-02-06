@@ -4,9 +4,13 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, BookOpen, MapPin, Phone, AlertTriangle, LogOut } from 'lucide-react';
+import { Home, BookOpen, MapPin, Phone, AlertTriangle, LogOut, Bot } from 'lucide-react';
 
-const MobileNavigation = () => {
+interface MobileNavigationProps {
+    onAIChatToggle?: () => void;
+}
+
+const MobileNavigation: React.FC<MobileNavigationProps> = ({ onAIChatToggle }) => {
     const pathname = usePathname();
     const { user, logout } = useAuth();
 
@@ -41,6 +45,15 @@ const MobileNavigation = () => {
                         </Link>
                     );
                 })}
+                {onAIChatToggle && (
+                    <button
+                        onClick={onAIChatToggle}
+                        className="flex flex-col items-center justify-center p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors"
+                    >
+                        <Bot className="h-5 w-5 mb-1" />
+                        <span className="text-xs font-medium">AI</span>
+                    </button>
+                )}
                 {user && (
                     <button
                         onClick={handleLogout}

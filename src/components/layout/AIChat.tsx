@@ -1,10 +1,26 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
 
-const AIChat = () => {
-    const [isOpen, setIsOpen] = useState(false);
+interface AIChatProps {
+    externalIsOpen?: boolean;
+    onExternalToggle?: (isOpen: boolean) => void;
+}
+
+const AIChat: React.FC<AIChatProps> = ({ externalIsOpen, onExternalToggle }) => {
+    const [internalIsOpen, setInternalIsOpen] = useState(false);
+
+    // Use external control if provided, otherwise use internal state
+    const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+
+    const toggleChat = () => {
+        if (onExternalToggle) {
+            onExternalToggle(!isOpen);
+        } else {
+            setInternalIsOpen(!isOpen);
+        }
+    };
     const [messages, setMessages] = useState([
         {
             id: 1,
@@ -48,7 +64,7 @@ const AIChat = () => {
     return (
         <>
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={toggleChat}
                 className={`fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50 p-4 rounded-full transition-all duration-300 shadow-lg ${isOpen ? 'bg-emergency' : 'bg-primary'
                     }`}
             >
