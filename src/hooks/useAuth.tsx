@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     }
                 }
                 setIsLoading(false);
-                return;
+                return () => { }; // return empty cleanup for mock mode
             }
 
             try {
