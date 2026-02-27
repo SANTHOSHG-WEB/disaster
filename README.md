@@ -1,7 +1,23 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Disaster Management Education Platform
+
+An interactive, gamified learning platform for schools and colleges to master disaster preparedness.
+
+---
+
+## 🚀 Live Demo & Testing
+You can test the platform's features immediately using these **Mock Credentials** (No registration required):
+
+| Role | Email ID | Password |
+| :--- | :--- | :--- |
+| **🏫 School Admin** | `admin@test.com` | *Any password* |
+| **🎓 Student** | `student@test.com` | *Any password* |
+
+> [!NOTE]
+> These credentials work by bypassing the database for evaluation purposes. To test real-time data and user registration, follow the setup instructions below.
+
+---
 
 ## Getting Started
-
 First, run the development server:
 
 ```bash
@@ -32,22 +48,3 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-## Testing Credentials
-
-You can use the following credentials to test the platform's features:
-
-### 1. School Admin
-Used for accessing the designated Admin Portal (`/admin/login`).
-*   **Email:** `admin@dme.com`
-*   **Password:** Use the password configured in your Supabase Auth dashboard.
-
-### 2. Student Account
-Used for regular student access (`/login`).
-*   **Email:** `student@test.com` (or any newly registered email)
-*   **Password:** Use the password configured during signup.
-
-### Mock Mode (Simulated Auth)
-If the project is running with placeholder Supabase environment variables:
-*   **Admin:** Any email starting with `admin` (e.g., `admin@test.com`) + any password.
-*   **Student:** Any other email + any password.
