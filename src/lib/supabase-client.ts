@@ -7,7 +7,7 @@ const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
 console.log("Initializing Supabase Client", { url: url ? "Present" : "Missing", key: anonKey ? "Present" : "Missing" });
 
-const isMockMode = url.includes('your-project');
+const isMockMode = !url || url.includes('your-project') || url === '';
 
 // If in mock mode, we export a stubbed version of the Supabase client
 // to prevent "Failed to fetch" errors and allow offline testing.

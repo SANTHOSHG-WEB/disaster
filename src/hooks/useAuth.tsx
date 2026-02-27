@@ -55,9 +55,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const initAuth = async () => {
             const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-            const isMockMode = url?.includes('your-project');
+            const isMockMode = !url || url.includes('your-project') || url === '';
 
-            console.log("Auth Initializing...", { isMockMode });
+            console.log("Auth Initializing...", { isMockMode, url });
 
             if (isMockMode) {
                 const storedSession = localStorage.getItem('dme_mock_session');
@@ -171,12 +171,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const login = async (email: string, password: string) => {
         setIsLoading(true);
         try {
-            // Check if using placeholder credentials
-            const isMockMode = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('your-project');
+            // Aggressive Rescue Mode: Trigger mock if email is @test.com OR url is placeholder
+            const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const isMockEmail = email.toLowerCase().endsWith('@test.com');
+            const isMockUrl = !url || url.includes('your-project') || url === '';
+            const isMockMode = isMockEmail || isMockUrl;
+
+            console.log("Login Mode Check", { isMockMode, isMockEmail, isMockUrl });
 
             if (isMockMode) {
                 // Simulate network delay
-                await new Promise(resolve => setTimeout(resolve, 800));
+                await new Promise(resolve => setTimeout(resolve, 500));
 
                 // Create mock session
                 // Use deterministic ID based on email to persist mock progress across logins
@@ -259,11 +264,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(true);
         console.log("Signup Request", { email, profileData });
         try {
-            // Check if using placeholder credentials
+            // Aggressive Rescue Mode
             const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-            const isMockMode = url?.includes('your-project');
+            const isMockEmail = email.toLowerCase().endsWith('@test.com');
+            const isMockUrl = !url || url.includes('your-project') || url === '';
+            const isMockMode = isMockEmail || isMockUrl;
 
-            console.log("Signup Mode check", { url, isMockMode });
+            console.log("Signup Mode check", { isMockMode, isMockEmail, isMockUrl });
 
             if (isMockMode) {
                 // Simulate network delay
