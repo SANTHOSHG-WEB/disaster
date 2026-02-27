@@ -33,4 +33,21 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Testing Credentials
+
+You can use the following credentials to test the platform's features:
+
+### 1. School Admin
+Used for accessing the designated Admin Portal (`/admin/login`).
+*   **Email:** `admin@dme.com`
+*   **Password:** Use the password configured in your Supabase Auth dashboard.
+
+### 2. Student Account
+Used for regular student access (`/login`).
+*   **Email:** `student@test.com` (or any newly registered email)
+*   **Password:** Use the password configured during signup.
+
+### Mock Mode (Simulated Auth)
+If the project is running with placeholder Supabase environment variables:
+*   **Admin:** Any email starting with `admin` (e.g., `admin@test.com`) + any password.
+*   **Student:** Any other email + any password.
