@@ -10,8 +10,9 @@ export async function updateSession(request: NextRequest) {
 
     // PERFORMANCE OPTIMIZATION: Check for Supabase session cookies before creating the client and calling getUser()
     // This avoids unnecessary network calls and potential timeouts for unauthenticated users
+    // We check for any cookie that contains "-auth-token" to handle chunked cookies (.0, .1, etc.)
     const hasSessionCookie = request.cookies.getAll().some(cookie =>
-        cookie.name.startsWith('sb-') && cookie.name.endsWith('-auth-token')
+        cookie.name.includes('-auth-token')
     )
 
     if (!hasSessionCookie) {
@@ -57,9 +58,13 @@ export async function updateSession(request: NextRequest) {
     // This is essentially a "refresh" of the session if it's expired
     // and it will trigger the set() or remove() callbacks above to update cookies
     try {
-        await supabase.auth.getUser()
+        const { error } = await supabase.auth.getUser()
+        if (error) {
+            // Handle specific auth errors if necessary, but don't block the request
+            console.warn('Middleware auth session refresh failed:', error.message)
+        }
     } catch (error) {
-        console.error('Middleware auth error:', error)
+        console.error('Middleware unexpected auth error:', error)
     }
 
     return response
